@@ -1,7 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = process.env.VERCEL
+  ? path.join("/tmp", "ai-study-assistant")
+  : path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "study_assistant.json");
 
 export interface DocumentRow {

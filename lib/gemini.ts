@@ -5,8 +5,14 @@ let _client: GoogleGenAI | null = null;
 let _cachedKey: string | null = null;
 
 export function getGeminiApiKey(): string | null {
-  if (process.env.GEMINI_API_KEY) {
-    return process.env.GEMINI_API_KEY;
+  const envKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+  if (envKey && envKey.trim().length > 0) {
+    return envKey.trim();
   }
   try {
     const db = getDb();

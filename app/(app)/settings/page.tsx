@@ -17,7 +17,7 @@ import {
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("");
-  const [modelName, setModelName] = useState("gemini-2.0-flash");
+  const [modelName, setModelName] = useState("gemini-2.5-flash");
   const [hasServerKey, setHasServerKey] = useState(false);
   const [studentName, setStudentName] = useState("Student");
   const [courses, setCourses] = useState<string[]>(["BIO 201 · Cell Biology", "CHEM 102 · Chemistry", "PSY 101 · Psychology"]);
@@ -145,16 +145,15 @@ export default function SettingsPage() {
                 value={modelName}
                 onChange={(e) => setModelName(e.target.value)}
               >
-                <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended)</option>
-                <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                <option value="gemini-2.5-flash">gemini-2.5-flash (Recommended)</option>
+                <option value="gemini-3-flash">gemini-3-flash</option>
+                <option value="gemini-3.8-flash">gemini-3.8-flash</option>
                 <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite</option>
-                <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
-                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option>
               </select>
             </div>
             <div style={{ fontSize: "0.72rem", color: "var(--color-text-3)", marginTop: "0.3rem" }}>
-              Primary model with automatic cascading fallback to <code>gemini-2.5-flash-lite</code>, <code>gemini-3.5-flash-lite</code>, and others if rate limits or quota are hit.
+              Primary model with automatic cascading fallback to <code>gemini-3-flash</code>, <code>gemini-3.8-flash</code>, <code>gemini-3.5-flash-lite</code>, and <code>gemini-3.1-flash-lite</code> with transient 503 retry.
             </div>
           </div>
 

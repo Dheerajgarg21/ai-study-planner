@@ -6,7 +6,9 @@ import fs from "fs";
 import path from "path";
 import { extractPdfContent } from "@/lib/rag";
 
-const UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
+const UPLOADS_DIR = process.env.VERCEL
+  ? path.join("/tmp", "ai-study-assistant", "uploads")
+  : path.join(process.cwd(), "data", "uploads");
 
 function ensureUploadDir() {
   if (!fs.existsSync(UPLOADS_DIR)) {
