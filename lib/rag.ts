@@ -78,20 +78,14 @@ export interface ParsedPdfResult {
 }
 
 /**
- * Load pdf-parse v1 (function-based API) via createRequire to bypass webpack bundling.
- * Uses process.cwd() instead of import.meta.url for Next.js/webpack compatibility.
- * pdf-parse is listed in serverExternalPackages in next.config.ts.
+ * Load pdf-parse v1 core parser directly.
+ * pdf-parse is listed in serverExternalPackages in next.config.ts, so Next.js
+ * leaves this as a native Node.js require and Vercel traces the package files.
+ * Loading lib/pdf-parse.js directly avoids pdf-parse/index.js's !module.parent debug bug.
  */
-async function loadPdfParse(): Promise<(buffer: Buffer, options?: any) => Promise<any>> {
-  const { createRequire } = await import("module");
-  const req = createRequire(process.cwd() + "/package.json");
-  let mod: any;
-  try {
-    // Load the core parser directly to avoid pdf-parse/index.js !module.parent debug bug
-    mod = req("pdf-parse/lib/pdf-parse.js");
-  } catch {
-    mod = req("pdf-parse");
-  }
+function loadPdfParse(): (buffer: Buffer, options?: any) => Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require("pdf-parse/lib/pdf-parse.js");
   if (typeof mod === "function") return mod;
   if (typeof mod?.default === "function") return mod.default;
   throw new Error("Could not load pdf-parse: not a function");
