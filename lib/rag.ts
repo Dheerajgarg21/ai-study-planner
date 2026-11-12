@@ -78,27 +78,22 @@ export interface ParsedPdfResult {
 }
 
 /**
- * Load pdf-parse safely, polyfilling any missing DOM globals first.
+ * Load pdf-parse v1 (function-based API) via createRequire to bypass webpack bundling.
+ * pdf-parse is listed in serverExternalPackages in next.config.ts.
  */
 async function loadPdfParse(): Promise<(buffer: Buffer, options?: any) => Promise<any>> {
-  try {
-    const { createRequire } = await import("module");
-    const req = createRequire(process.cwd() + "/package.json");
-    const mod = req("pdf-parse");
-    // pdf-parse v1 exports a function directly; v2 may export default
-    const fn = typeof mod === "function" ? mod : (mod.default ?? mod);
-    if (typeof fn === "function") return fn;
-    throw new Error("pdf-parse did not export a callable function");
-  } catch {
-    const mod = await import("pdf-parse");
-    const fn = typeof mod === "function" ? mod : (mod as any).default;
-    if (typeof fn === "function") return fn as any;
-    throw new Error("Could not load pdf-parse");
-  }
+  const { createRequire } = await import("module");
+  const req = createRequire(import.meta.url);
+  const mod = req("pdf-parse");
+  if (typeof mod === "function") return mod;
+  if (typeof mod.default === "function") return mod.default;
+  throw new Error("Could not load pdf-parse: unexpected export shape");
 }
 
 /**
- * Extract full text and individual pages from a PDF buffer using pdf-parse.
+ * Extract full text and individual pages from a PDF buffer using pdf-parse v1.
+ * pdf-parse v1 natively returns { text, numpages, info, metadata } —
+ * we use a pagerender callback to capture per-page text with page numbers.
  */
 export async function extractPdfContent(
   docId: string,
@@ -106,32 +101,32 @@ export async function extractPdfContent(
 ): Promise<ParsedPdfResult> {
   const pdfParse = await loadPdfParse();
 
-  // Collect per-page text via the pagerender callback
+  // Collect per-page text with accurate page numbers via pagerender
   const pageTexts: Array<{ text: string; num: number }> = [];
   let pageCounter = 0;
 
   const options = {
-    pagerender: (pageData: any) => {
+    pagerender: async (pageData: any) => {
       pageCounter++;
       const pageNum = pageCounter;
-      return pageData
-        .getTextContent()
-        .then((textContent: any) => {
-          const strings = textContent.items.map((item: any) => item.str || "");
-          const text = strings.join(" ").trim();
-          pageTexts.push({ text, num: pageNum });
-          return text;
-        })
-        .catch(() => {
-          pageTexts.push({ text: "", num: pageNum });
-          return "";
-        });
+      try {
+        const textContent = await pageData.getTextContent();
+        const text = textContent.items
+          .map((item: any) => item.str || "")
+          .join(" ")
+          .trim();
+        pageTexts.push({ text, num: pageNum });
+        return text;
+      } catch {
+        pageTexts.push({ text: "", num: pageNum });
+        return "";
+      }
     },
   };
 
   const result = await pdfParse(buffer, options);
 
-  // If pagerender populated pageTexts, use those; otherwise fall back to full text split
+  // Use per-page data if captured; otherwise treat entire text as page 1
   const pages =
     pageTexts.length > 0
       ? pageTexts
